@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Ella’s Big Trip</title>
+
+    <!-- Mobile friendly -->
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, viewport-fit=cover"
+    />
+
+    <!-- Styles -->
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+
+  <body>
+    <!-- Top bar -->
+    <header class="app-header">
+      <h1>Ella’s Big Trip</h1>
+      <button id="settingsBtn" aria-label="Settings">⚙️</button>
+    </header>
+
+    <!-- Offline / Sync banner -->
+    <div id="statusBanner" class="status-banner offline hidden">
+      Offline — saved locally. Not synced.
+    </div>
+
+    <!-- Main content -->
+    <main id="appContent">
+      <!-- Daily metrics (simple local totals – placeholder for now) -->
+      <section class="card">
+        <h2>Today</h2>
+        <div class="metric-value" id="todaySpend">₪ 0</div>
+      </section>
+
+      <!-- Last entries -->
+      <section class="card">
+        <h2>Last entries</h2>
+        <ul id="lastEntries" class="entry-list">
+          <li class="empty">No entries yet</li>
+        </ul>
+      </section>
+    </main>
+
+    <!-- Floating Add Button -->
+    <button id="fab" class="fab" aria-label="Add expense">+</button>
+
+    <!-- Category Picker Modal -->
+    <div
+      id="categoryModal"
+      class="modal hidden"
+      role="dialog"
+      aria-modal="true"
+    >
+      <div class="modal-content">
+        <header class="modal-header">
+          <h2>Select category</h2>
+          <button id="closeCategoryModal" aria-label="Close">✕</button>
+        </header>
+
+        <div id="categoryGrid" class="category-grid">
+          <!-- Categories injected by JS -->
+        </div>
+      </div>
+    </div>
+
+    <!-- Entry Form Modal (full screen) -->
+    <div id="formModal" class="modal hidden" role="dialog" aria-modal="true">
+      <div class="modal-content">
+        <header class="modal-header">
+          <h2 id="formTitle">Add entry</h2>
+          <button id="closeFormModal" aria-label="Close">✕</button>
+        </header>
+
+        <form id="entryForm" class="form">
+          <!-- Common fields -->
+          <label class="field">
+            <span>Description</span>
+            <input
+              id="f_description"
+              type="text"
+              placeholder="e.g., Dinner at..."
+              required
+            />
+          </label>
+
+          <div class="row-2">
+            <label class="field">
+              <span>Date</span>
+              <input id="f_date" type="date" required />
+            </label>
+
+            <label class="field">
+              <span>Country</span>
+              <input id="f_country" type="text" placeholder="e.g., Thailand" />
+            </label>
+          </div>
+
+          <label class="field">
+            <span>Place name</span>
+            <input
+              id="f_place"
+              type="text"
+              placeholder="e.g., 7-Eleven / Hotel XYZ"
+            />
+          </label>
+
+          <div class="row-2">
+            <label class="field">
+              <span>Amount</span>
+              <input
+                id="f_amount"
+                type="number"
+                step="0.01"
+                inputmode="decimal"
+                required
+              />
+            </label>
+
+            <label class="field">
+              <span>Currency</span>
+              <!-- ✅ was input, now select -->
+              <select id="f_currency" required></select>
+            </label>
+          </div>
+
+          <label class="field">
+            <span>Payment method</span>
+            <select id="f_paymentMethod" required></select>
+          </label>
+
+          <div class="row-2">
+            <label class="field checkbox">
+              <input id="f_isRefund" type="checkbox" />
+              <span>Refund</span>
+            </label>
+
+            <label class="field checkbox">
+              <input id="f_isMultiday" type="checkbox" />
+              <span>Multi-day</span>
+            </label>
+          </div>
+
+          <div id="multidayBox" class="row-2 hidden">
+            <label class="field">
+              <span>Duration (days)</span>
+              <input id="f_duration" type="number" min="1" step="1" value="1" />
+            </label>
+
+            <label class="field">
+              <span>End date (optional)</span>
+              <input id="f_endDate" type="date" />
+            </label>
+          </div>
+
+          <label class="field">
+            <span>Notes</span>
+            <input id="f_notes" type="text" placeholder="Optional" />
+          </label>
+
+          <!-- Withdrawal-only fields -->
+          <div id="withdrawalBox" class="hidden">
+            <hr />
+
+            <h3 class="subhead">Withdrawal details</h3>
+
+            <label class="field">
+              <span>Withdrawal source (bank/card)</span>
+              <select id="f_withdrawalSource"></select>
+            </label>
+
+            <label class="field">
+              <span>Cash wallet (received)</span>
+              <select id="f_cashWallet"></select>
+            </label>
+
+            <div class="row-2">
+              <label class="field">
+                <span>Cash received</span>
+                <input
+                  id="f_cashAmount"
+                  type="number"
+                  step="0.01"
+                  inputmode="decimal"
+                />
+              </label>
+
+              <label class="field">
+                <span>Cash currency</span>
+                <!-- ✅ was input, now select -->
+                <select id="f_cashCurrency"></select>
+              </label>
+            </div>
+
+            <div class="row-2">
+              <label class="field">
+                <span>Fee amount</span>
+                <input
+                  id="f_feeAmount"
+                  type="number"
+                  step="0.01"
+                  inputmode="decimal"
+                />
+              </label>
+
+              <label class="field">
+                <span>Fee currency</span>
+                <!-- ✅ was input, now select -->
+                <select id="f_feeCurrency"></select>
+              </label>
+            </div>
+          </div>
+
+          <div class="form-actions">
+            <button id="cancelBtn" type="button" class="secondary">
+              Cancel
+            </button>
+
+            <!-- Only shown when editing -->
+            <button id="deleteBtn" type="button" class="danger hidden">
+              Delete
+            </button>
+
+            <button id="saveBtn" type="submit" class="primary">Save</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Settings Modal -->
+    <div
+      id="settingsModal"
+      class="modal hidden"
+      role="dialog"
+      aria-modal="true"
+    >
+      <div class="modal-content">
+        <header class="modal-header">
+          <h2>Settings</h2>
+          <button id="closeSettingsModal" aria-label="Close">✕</button>
+        </header>
+
+        <!-- Sync -->
+        <div class="settings-section">
+          <h3 class="settings-title">Sync</h3>
+          <div class="settings-row">
+            <div class="settings-label">Last online sync</div>
+            <div id="s_lastSync" class="settings-value">—</div>
+          </div>
+        </div>
+
+        <!-- FX -->
+        <div class="settings-section">
+          <h3 class="settings-title">FX</h3>
+
+          <div class="settings-row">
+            <div class="settings-label">FX last updated</div>
+            <div id="s_fxUpdated" class="settings-value">—</div>
+          </div>
+
+          <div class="settings-row">
+            <div class="settings-label">Rates</div>
+
+            <div class="fx-actions">
+              <button id="btnCheckFx" class="secondary" type="button">
+                Check &amp; update online
+              </button>
+              <div id="s_fxNote">—</div>
+            </div>
+          </div>
+
+          <div id="fxTableWrap">
+            <table
+              id="fxTable"
+              class="fx-table"
+              aria-label="FX rates table"
+            ></table>
+          </div>
+        </div>
+
+        <!-- Data -->
+        <div class="settings-section">
+          <h3 class="settings-title">Data</h3>
+
+          <div class="settings-actions">
+            <button id="btnExport" class="secondary" type="button">
+              Export data
+            </button>
+
+            <label for="importFile" class="sr-only"
+              >Import JSON data file</label
+            >
+            <input
+              id="importFile"
+              type="file"
+              accept="application/json"
+              class="hidden"
+            />
+
+            <button id="btnImport" class="secondary" type="button">
+              Import data
+            </button>
+
+            <button id="btnRestoreDefaults" class="danger" type="button">
+              Restore defaults
+            </button>
+            <button id="btnResetLocal" class="danger" type="button">
+              Reset all local data
+            </button>
+          </div>
+
+          <div class="settings-hint">
+            Export/import is for upgrading versions without losing data.
+          </div>
+        </div>
+
+        <!-- About -->
+        <div class="settings-section">
+          <h3 class="settings-title">About</h3>
+          <div class="settings-row">
+            <div class="settings-label">Version</div>
+            <div id="s_version" class="settings-value">—</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="data.js"></script>
+    <script src="fx.js"></script>
+    <script src="db.js"></script>
+    <script src="app.js"></script>
+  </body>
+</html>
