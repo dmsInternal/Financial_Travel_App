@@ -1092,6 +1092,7 @@ const updateBanner = document.getElementById('updateBanner');
 const btnReload = document.getElementById('btnReload');
 
 let swRegistration = null;
+let refreshing = false;
 
 function showUpdateBanner() {
   updateBanner?.classList.remove('hidden');
@@ -1100,10 +1101,16 @@ function showUpdateBanner() {
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', async () => {
     try {
+      // Snapshot whether this page was already controlled BEFORE registering
+      const hadController = !!navigator.serviceWorker.controller;
+
       swRegistration = await navigator.serviceWorker.register('./service-worker.js');
 
       // If there’s already a waiting worker (update ready)
-      if (swRegistration.waiting) showUpdateBanner();
+      // Only show banner if we were already controlled (i.e., this is an update, not first install)
+      if (swRegistration.waiting && hadController) {
+        showUpdateBanner();
+      }
 
       // When a new worker is found, watch for it to become "installed"
       swRegistration.addEventListener('updatefound', () => {
@@ -1111,16 +1118,18 @@ if ('serviceWorker' in navigator) {
         if (!newWorker) return;
 
         newWorker.addEventListener('statechange', () => {
-          // "installed" + we already have a controller => update available
+          // Show banner ONLY when:
+          // - new worker is installed
+          // - we already have a controller (means update, not first install)
           if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
             showUpdateBanner();
           }
         });
       });
 
-      // When SW takes over, reload once to use new assets
+      // Reload only when the user clicked Refresh
       navigator.serviceWorker.addEventListener('controllerchange', () => {
-        window.location.reload();
+        if (refreshing) window.location.reload();
       });
 
     } catch (e) {
@@ -1129,8 +1138,10 @@ if ('serviceWorker' in navigator) {
   });
 }
 
-btnReload?.addEventListener('click', async () => {
+btnReload?.addEventListener('click', () => {
   if (!swRegistration) return;
+
+  refreshing = true;
 
   // Tell waiting SW to activate now
   if (swRegistration.waiting) {
@@ -1140,6 +1151,7 @@ btnReload?.addEventListener('click', async () => {
     window.location.reload();
   }
 });
+
 
 
 /* =========================================================
