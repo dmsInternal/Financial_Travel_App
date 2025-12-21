@@ -1,4 +1,4 @@
-const CACHE_VERSION = "v3"; // bump this each release
+const CACHE_VERSION = "v2"; // bump this each release
 const CACHE_NAME = `ella-big-trip-${CACHE_VERSION}`;
 
 const ASSETS = [
