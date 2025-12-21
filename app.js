@@ -1086,21 +1086,59 @@ if ("serviceWorker" in navigator) {
 }
 
 /* ===========================
-   22) PWA update handling
+   22) PWA update handling: Service worker + update UX
    =========================== */
 const updateBanner = document.getElementById('updateBanner');
 const btnReload = document.getElementById('btnReload');
 
+let swRegistration = null;
+
+function showUpdateBanner() {
+  updateBanner?.classList.remove('hidden');
+}
+
 if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.addEventListener('message', event => {
-    if (event.data?.type === 'SW_UPDATED') {
-      updateBanner?.classList.remove('hidden');
+  window.addEventListener('load', async () => {
+    try {
+      swRegistration = await navigator.serviceWorker.register('./service-worker.js');
+
+      // If there’s already a waiting worker (update ready)
+      if (swRegistration.waiting) showUpdateBanner();
+
+      // When a new worker is found, watch for it to become "installed"
+      swRegistration.addEventListener('updatefound', () => {
+        const newWorker = swRegistration.installing;
+        if (!newWorker) return;
+
+        newWorker.addEventListener('statechange', () => {
+          // "installed" + we already have a controller => update available
+          if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+            showUpdateBanner();
+          }
+        });
+      });
+
+      // When SW takes over, reload once to use new assets
+      navigator.serviceWorker.addEventListener('controllerchange', () => {
+        window.location.reload();
+      });
+
+    } catch (e) {
+      console.error('SW registration failed', e);
     }
   });
 }
 
-btnReload?.addEventListener('click', () => {
-  location.reload();
+btnReload?.addEventListener('click', async () => {
+  if (!swRegistration) return;
+
+  // Tell waiting SW to activate now
+  if (swRegistration.waiting) {
+    swRegistration.waiting.postMessage({ type: 'SKIP_WAITING' });
+  } else {
+    // fallback
+    window.location.reload();
+  }
 });
 
 
