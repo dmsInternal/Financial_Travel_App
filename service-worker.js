@@ -1,4 +1,5 @@
 const CACHE_NAME = "ella-big-trip-v1";
+const CACHE_VERSION = 'v1'; // bump this when you want to force-update
 const ASSETS = [
   "/Financial_Travel_App/",
   "/Financial_Travel_App/index.html",
