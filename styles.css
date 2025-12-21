@@ -511,6 +511,34 @@ body.modal-open{
   color: #333;
 }
 
+/* ===========================
+   App update banner
+   =========================== */
+.update-banner {
+  position: fixed;
+  left: 12px;
+  right: 12px;
+  bottom: 12px;
+  z-index: 100;
+
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+
+  padding: 12px 14px;
+  border-radius: 14px;
+  background: #222;
+  color: #fff;
+  box-shadow: 0 10px 30px rgba(0,0,0,.35);
+}
+
+.update-banner button.small {
+  padding: 8px 12px;
+  font-size: 14px;
+}
+
+
 
 /* Screen-reader only (accessible, not visible) */
 .sr-only {
