@@ -1,5 +1,6 @@
-const CACHE_NAME = "ella-big-trip-v1";
-const CACHE_VERSION = 'v2'; // bump this when you want to force-update
+const CACHE_VERSION = "v2"; // bump this each release
+const CACHE_NAME = `ella-big-trip-${CACHE_VERSION}`;
+
 const ASSETS = [
   "/Financial_Travel_App/",
   "/Financial_Travel_App/index.html",
@@ -15,21 +16,26 @@ const ASSETS = [
 
 self.addEventListener("install", (event) => {
   event.waitUntil(caches.open(CACHE_NAME).then((cache) => cache.addAll(ASSETS)));
-  self.skipWaiting();
+  self.skipWaiting(); // allow immediate activation
 });
 
+self.addEventListener("activate", (event) => {
+  event.waitUntil((async () => {
+    // cleanup old caches
+    const keys = await caches.keys();
+    await Promise.all(keys.map(k => (k !== CACHE_NAME ? caches.delete(k) : Promise.resolve())));
 
-self.addEventListener('activate', event => {
-  event.waitUntil(
-    (async () => {
-      const clients = await self.clients.matchAll({ type: 'window' });
-      for (const client of clients) {
-        client.postMessage({ type: 'SW_UPDATED' });
-      }
-    })()
-  );
+    // take control of open pages
+    await self.clients.claim();
+  })());
 });
 
+// Allow the page to tell SW "activate now"
+self.addEventListener("message", (event) => {
+  if (event.data?.type === "SKIP_WAITING") {
+    self.skipWaiting();
+  }
+});
 
 self.addEventListener("fetch", (event) => {
   event.respondWith(
