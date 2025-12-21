@@ -1085,8 +1085,27 @@ if ("serviceWorker" in navigator) {
   });
 }
 
+/* ===========================
+   22) PWA update handling
+   =========================== */
+const updateBanner = document.getElementById('updateBanner');
+const btnReload = document.getElementById('btnReload');
+
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.addEventListener('message', event => {
+    if (event.data?.type === 'SW_UPDATED') {
+      updateBanner?.classList.remove('hidden');
+    }
+  });
+}
+
+btnReload?.addEventListener('click', () => {
+  location.reload();
+});
+
+
 /* =========================================================
-   22) Init
+   23) Init
    ========================================================= */
 (async () => {
   // Build static UI
