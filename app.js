@@ -1079,11 +1079,6 @@ window.addEventListener('offline', async () => {
   if (!settingsModal?.classList.contains('hidden')) await refreshSettingsUI();
 });
 
-if ("serviceWorker" in navigator) {
-  window.addEventListener("load", () => {
-    navigator.serviceWorker.register("./service-worker.js").catch(console.error);
-  });
-}
 
 /* ===========================
    22) PWA update handling: Service worker + update UX
@@ -1105,6 +1100,7 @@ if ('serviceWorker' in navigator) {
       const hadController = !!navigator.serviceWorker.controller;
 
       swRegistration = await navigator.serviceWorker.register('./service-worker.js');
+      await swRegistration.update();
 
       // If there’s already a waiting worker (update ready)
       // Only show banner if we were already controlled (i.e., this is an update, not first install)
