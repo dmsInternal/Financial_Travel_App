@@ -1083,6 +1083,9 @@ window.addEventListener('offline', async () => {
 /* ===========================
    22) PWA update handling: Service worker + update UX
    =========================== */
+/* ===========================
+   22) PWA update handling: Service worker + update UX
+   =========================== */
 const updateBanner = document.getElementById('updateBanner');
 const btnReload = document.getElementById('btnReload');
 
@@ -1093,37 +1096,33 @@ function showUpdateBanner() {
   updateBanner?.classList.remove('hidden');
 }
 
+function maybeShowUpdate(reg) {
+  if (reg?.waiting) showUpdateBanner();
+}
+
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', async () => {
     try {
-      // Snapshot whether this page was already controlled BEFORE registering
       const hadController = !!navigator.serviceWorker.controller;
 
       swRegistration = await navigator.serviceWorker.register('./service-worker.js');
       await swRegistration.update();
 
-      // If there’s already a waiting worker (update ready)
-      // Only show banner if we were already controlled (i.e., this is an update, not first install)
-      if (swRegistration.waiting && hadController) {
-        showUpdateBanner();
-      }
+      // If update is already waiting (and this isn't first install)
+      if (hadController) maybeShowUpdate(swRegistration);
 
-      // When a new worker is found, watch for it to become "installed"
       swRegistration.addEventListener('updatefound', () => {
         const newWorker = swRegistration.installing;
         if (!newWorker) return;
 
         newWorker.addEventListener('statechange', () => {
-          // Show banner ONLY when:
-          // - new worker is installed
-          // - we already have a controller (means update, not first install)
           if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-            showUpdateBanner();
+            // Now there should be a waiting SW
+            maybeShowUpdate(swRegistration);
           }
         });
       });
 
-      // Reload only when the user clicked Refresh
       navigator.serviceWorker.addEventListener('controllerchange', () => {
         if (refreshing) window.location.reload();
       });
@@ -1139,15 +1138,12 @@ btnReload?.addEventListener('click', () => {
 
   refreshing = true;
 
-  // Tell waiting SW to activate now
   if (swRegistration.waiting) {
     swRegistration.waiting.postMessage({ type: 'SKIP_WAITING' });
   } else {
-    // fallback
     window.location.reload();
   }
 });
-
 
 
 /* =========================================================
